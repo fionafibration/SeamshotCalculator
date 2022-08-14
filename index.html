@@ -27,6 +27,9 @@
             can fix it for me lol.
         </p>
 
+        <label for="sar_mode"> Use SourceAutoRecord drawlines</label> <input type="checkbox" id="sar_mode" checked onchange="sarModechange();">
+        <br>
+
         <input type='button' id="bspFileInput" value="Select a BSP file." onclick="requestBSPFile();">
         <input type='button' id='bspFileLoad' disabled="true" value='Calculate seams' onclick='loadFile();'>
         <span id="log">

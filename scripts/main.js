@@ -1,8 +1,13 @@
 var SeamshotWorker = null;
 var bspFile = null;
+var sarMode = true;
 
 function log(msg) {
     document.querySelector("#log").innerHTML = msg;
+}
+
+function sarModechange() {
+    sarMode = document.getElementById('sar_mode').checked;
 }
 
 
@@ -76,18 +81,53 @@ function loadFile() {
 }
 
 
+function round(num, places) {
+    return Math.round((num + Number.EPSILON) * (Math.pow(10, places))) / (Math.pow(10, places))
+}
 
 // converts seamshot array into a drawline commands string, then requests download.
 function outputSeamshotsIntoFile(seamshots, filename) {
+    let r = 2
     let output = "";
+    if (sarMode) {
+        for (let seamshot of seamshots) {
+            output +=
+                "sar_drawline "
+                + round(seamshot.point1.x, r) + " " + round(seamshot.point1.y, r) + " " + round(seamshot.point1.z, r) + " "
+                + round(seamshot.point2.x, r) + " " + round(seamshot.point2.y, r) + " " + round(seamshot.point2.z, r) + " "
+                + (seamshot.planenum > 1 ? "0 255 0" : (seamshot.type == 0 ? "255 150 0" : "255 0 0"))
+                + "\n";
+        }
+    }
 
-    for (let seamshot of seamshots) {
-        output +=
-            "drawline "
-            + seamshot.point1.x + " " + seamshot.point1.y + " " + seamshot.point1.z + " "
-            + seamshot.point2.x + " " + seamshot.point2.y + " " + seamshot.point2.z + " "
-            + (seamshot.planenum > 1 ? "0 255 0" : (seamshot.type == 0 ? "255 150 0" : "255 0 0"))
-            + "\n";
+    // default source engine drawline maxes at 20
+    // step through batches of 20 drawline commands at once
+    // user can bind drawline_next and drawline_prev
+    else {
+        output += "// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n// Source drawline is limited to 20 lines at one time\n// Bind these aliases to step through batches\n"
+        output += "alias drawline_next drawbatch0" + "\n";
+        output += "alias drawline_prev \"\"" + "\n\n\n";
+
+
+        // batch
+        for (let i = 0; i * 5 < seamshots.length; i += 1) {
+            output += "alias drawbatch" + i + " \"";
+
+            for (let j = 0; j < 5 && (i * 5 + j) < seamshots.length; j++) {
+                let seamshot = seamshots[i * 5 + j];
+                output += "drawline "
+                    + round(seamshot.point1.x, r) + " " + round(seamshot.point1.y, r) + " " + round(seamshot.point1.z, r) + " "
+                    + round(seamshot.point2.x, r) + " " + round(seamshot.point2.y, r) + " " + round(seamshot.point2.z, r) + " "
+                    + (seamshot.planenum > 1 ? "0 255 0" : (seamshot.type == 0 ? "255 150 0" : "255 0 0"))
+                    + "; ";
+            }
+            // set our aliases
+            if (i !== 0) {
+                output += "alias drawline_prev drawbatch" + (i - 1) + "; ";
+            }
+            output += "alias drawline_next drawbatch" + (i + 1) + "; ";
+            output += "\"\n"
+        }
     }
 
     download(filename, output);
