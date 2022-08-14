@@ -3,12 +3,24 @@
 
 const BSP = {};
 
-BSP.LumpHeader = class{
-    constructor(data){
+BSP.LumpHeader = class {
+    constructor(data) {
         this.fileOffset = data.read("int", 4);
         this.fileLength = data.read("int", 4);
         this.version = data.read("int", 4);
-        this.fourCC = data.read("raw", 4);
+        this.fourCC = data.read("int", 4);
+        if (this.fourCC !== 0) {
+            console.log('got LZMA lump maybe')
+        }
+    }
+}
+
+BSP.LZMAHeader = class {
+    constructor(data) {
+        this.id = data.read("int", 4);
+        this.actualSize = data.read("int", 4);
+        this.lzmaSize = data.read("int", 4);
+        this.properties = data.read("raw", 5);
     }
 }
 
@@ -108,18 +120,18 @@ BSP.LumpClasses = {
 }
 
 
-BSP.Map = class{
+BSP.Map = class {
     constructor(data) {
         const HEADER_LUMPS = 64;
 
         let beginTime = new Date().getTime();
-        
+
         // Parsing header
         this.identifier = data.read("string", 4);
         this.version = data.read("int", 4);
         this.lumps = [];
 
-        for (let i = 0; i < HEADER_LUMPS; i++){
+        for (let i = 0; i < HEADER_LUMPS; i++) {
             this.lumps[i] = new BSP.LumpHeader(data);
         }
         this.mapRevision = data.read("int", 4);
@@ -135,7 +147,7 @@ BSP.Map = class{
 
         let endTime = new Date().getTime();
         console.log("parsing done in " + (endTime - beginTime) / 1000 + "s");
-        
+
         this.updateLeafs();
         this.updateBrushes();
     }
@@ -143,6 +155,34 @@ BSP.Map = class{
     readLump(data, id) {
         let startOffset = this.lumps[id].fileOffset;
         let length = this.lumps[id].fileLength;
+        data.offset = startOffset;
+
+        let lzmaid = data.read("string", 4);
+        let actualSize = data.read("raw", 4);
+        let lzmaSize = data.read("uint", 4);
+        let properties = data.read("raw", 5);
+
+        if (lzmaid === 'LZMA') {
+            console.log('LZMA header found', id);
+
+            let compressed_data = data.read("raw", lzmaSize);
+            let decompressed = LZMA.decompress(properties.concat(actualSize).concat([0, 0, 0, 0]).concat(compressed_data));
+
+            let decompressed_array = new Uint8Array(decompressed);
+            let decompressed_lump_data = new BinaryParser(decompressed_array);
+
+            let LumpObject = BSP.LumpClasses[id];
+            let lumpObjects = [];
+
+            let uncompressed_size = decompressed_lump_data.parseInt(actualSize, false);
+
+            while (decompressed_lump_data.offset < uncompressed_size) {
+                lumpObjects.push(new LumpObject(decompressed_lump_data));
+            }
+
+            return lumpObjects;
+        }
+
         data.offset = startOffset;
 
         let LumpObject = BSP.LumpClasses[id];
@@ -169,12 +209,13 @@ BSP.Map = class{
             nodesToCheck = [];
             for (let nodeID of nodes) {
                 let node = this.nodes[nodeID];
-                for (let i = 0; i < 2; i++){
+                for (let i = 0; i < 2; i++) {
                     let childID = node.children[i];
                     if (childID < 0) {
                         this.leafs[-(childID + 1)].existsInTree = true;
                     } else {
                         nodesToCheck.push(childID);
+
                     }
                 }
             }
@@ -193,7 +234,7 @@ BSP.Map = class{
                 let brushSide = this.brushSides[brush.firstside + i];
                 if (brushSide.bevel) continue;
                 let normal = this.planes[brushSide.planenum].normal;
-                
+
                 if (Math.abs(normal.x) < 1 && Math.abs(normal.y) < 1 && Math.abs(normal.z) < 1) {
                     brush.isBox = false;
                     break;

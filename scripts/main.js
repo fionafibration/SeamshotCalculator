@@ -83,7 +83,7 @@ function outputSeamshotsIntoFile(seamshots, filename) {
 
     for (let seamshot of seamshots) {
         output +=
-            "sar_drawline "
+            "drawline "
             + seamshot.point1.x + " " + seamshot.point1.y + " " + seamshot.point1.z + " "
             + seamshot.point2.x + " " + seamshot.point2.y + " " + seamshot.point2.z + " "
             + (seamshot.planenum > 1 ? "0 255 0" : (seamshot.type == 0 ? "255 150 0" : "255 0 0"))

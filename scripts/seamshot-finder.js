@@ -1,7 +1,8 @@
 importScripts(
     "vector.js",
     "binary-parser.js",
-    "bsp-parser.js"
+    "bsp-parser.js",
+    "lzma_worker.js"
 );
 
 // very dumb logging system idk dont @ me
