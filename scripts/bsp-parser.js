@@ -8,19 +8,7 @@ BSP.LumpHeader = class {
         this.fileOffset = data.read("int", 4);
         this.fileLength = data.read("int", 4);
         this.version = data.read("int", 4);
-        this.fourCC = data.read("int", 4);
-        if (this.fourCC !== 0) {
-            console.log('got LZMA lump maybe')
-        }
-    }
-}
-
-BSP.LZMAHeader = class {
-    constructor(data) {
-        this.id = data.read("int", 4);
-        this.actualSize = data.read("int", 4);
-        this.lzmaSize = data.read("int", 4);
-        this.properties = data.read("raw", 5);
+        this.fourCC = data.read("raw", 4);
     }
 }
 

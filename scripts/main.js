@@ -105,13 +105,16 @@ function outputSeamshotsIntoFile(seamshots, filename) {
     // user can bind drawline_next and drawline_prev
     else {
         output += "// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n// Source drawline is limited to 20 lines at one time\n// Bind these aliases to step through batches\n"
-        output += "alias drawline_next drawbatch0" + "\n";
-        output += "alias drawline_prev \"\"" + "\n\n\n";
+        output += "bind mwheelup dl_n // next\nbind wheeldown dl_p // prev\n"
+        // gotta be short to avoid command length limit
+        // next and previous
+        output += "alias dl_n drb0" + "\n";
+        output += "alias dl_p \"\"" + "\n\n\n";
 
 
-        // batch
+        // draw batch
         for (let i = 0; i * 5 < seamshots.length; i += 1) {
-            output += "alias drawbatch" + i + " \"";
+            output += "alias drb" + i + " \"";
 
             for (let j = 0; j < 5 && (i * 5 + j) < seamshots.length; j++) {
                 let seamshot = seamshots[i * 5 + j];
@@ -123,9 +126,9 @@ function outputSeamshotsIntoFile(seamshots, filename) {
             }
             // set our aliases
             if (i !== 0) {
-                output += "alias drawline_prev drawbatch" + (i - 1) + "; ";
+                output += "alias dl_p drb" + (i - 1) + "; ";
             }
-            output += "alias drawline_next drawbatch" + (i + 1) + "; ";
+            output += "alias dl_n drb" + (i + 1) + "; ";
             output += "\"\n"
         }
     }
