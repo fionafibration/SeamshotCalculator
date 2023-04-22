@@ -1,6 +1,6 @@
 var SeamshotWorker = null;
 var bspFile = null;
-var sarMode = true;
+var sarMode = false;
 
 function log(msg) {
     document.querySelector("#log").innerHTML = msg;
